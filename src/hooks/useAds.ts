@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react';
 import { Platform } from 'react-native';
 import { Ad } from '../data/ads';
 
-// Na webu Expo koristi baseUrl iz app.json (/ads-race),
-// na nativnom uređaju fečujemo sa GitHub Pages direktno.
-const BASE =
+const ADS_URL =
   Platform.OS === 'web'
-    ? ''
-    : 'https://ulazimo.github.io/ads-race';
+    ? 'ads.json'  // relativni path — radi sa bilo kojim baseUrl
+    : 'https://ulazimo.github.io/ads-race/ads.json';
 
 export function useAds() {
   const [ads, setAds] = useState<Ad[]>([]);
@@ -15,7 +13,7 @@ export function useAds() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${BASE}/ads.json`)
+    fetch(ADS_URL)
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
