@@ -42,6 +42,13 @@ export default function HomeScreen({ navigation }: Props) {
           </>
         )}
 
+        <TouchableOpacity
+          style={styles.leaderboardButton}
+          onPress={() => navigation.navigate('Leaderboard')}
+        >
+          <Text style={styles.leaderboardText}>Leaderboard</Text>
+        </TouchableOpacity>
+
         {totalScore > 0 && (
           <TouchableOpacity onPress={resetScore} style={styles.resetButton}>
             <Text style={styles.resetText}>Resetuj score</Text>
@@ -126,6 +133,20 @@ const styles = StyleSheet.create({
     color: '#555',
     fontSize: 13,
     textDecorationLine: 'underline',
+  },
+  leaderboardButton: {
+    backgroundColor: '#1e1e2e',
+    paddingVertical: 14,
+    borderRadius: 28,
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2a2a3e',
+  },
+  leaderboardText: {
+    color: '#aaa',
+    fontSize: 16,
+    fontWeight: '600',
   },
   errorText: {
     color: '#e53935',

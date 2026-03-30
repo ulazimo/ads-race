@@ -19,7 +19,14 @@
       "Bash(netlify deploy:*)",
       "Bash(npx surge:*)",
       "Bash(kill %1)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Bash(npx gh-pages:*)",
+      "Bash(gh api:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh run:*)",
+      "WebFetch(domain:ulazimo.github.io)"
     ]
   }
 }

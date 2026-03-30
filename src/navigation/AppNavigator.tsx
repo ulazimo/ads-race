@@ -4,6 +4,7 @@ import HomeScreen from '../screens/HomeScreen';
 import WatchAdScreen from '../screens/WatchAdScreen';
 import QuizScreen from '../screens/QuizScreen';
 import ResultScreen from '../screens/ResultScreen';
+import LeaderboardScreen from '../screens/LeaderboardScreen';
 import { Ad } from '../data/ads';
 
 export type RootStackParamList = {
@@ -11,6 +12,7 @@ export type RootStackParamList = {
   WatchAd: { ad: Ad };
   Quiz: { ad: Ad };
   Result: { score: number; total: number; adTitle: string };
+  Leaderboard: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -22,6 +24,7 @@ export default function AppNavigator() {
       <Stack.Screen name="WatchAd" component={WatchAdScreen} />
       <Stack.Screen name="Quiz" component={QuizScreen} />
       <Stack.Screen name="Result" component={ResultScreen} />
+      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
     </Stack.Navigator>
   );
 }

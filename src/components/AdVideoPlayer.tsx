@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 
 interface Props {
   videoUri: string | number;
@@ -9,25 +9,29 @@ interface Props {
 
 // ── Web: plain HTML5 <video> ──────────────────────────────────────────────
 function WebVideoPlayer({ videoUri, watchSeconds, onFinished }: Props) {
-  const [canContinue, setCanContinue] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(watchSeconds);
   const [isPlaying, setIsPlaying] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const doneRef = useRef(false);
 
   useEffect(() => {
-    if (!isPlaying || canContinue) return;
+    if (!isPlaying || doneRef.current) return;
     timerRef.current = setInterval(() => {
       setSecondsLeft(s => {
         if (s <= 1) {
           if (timerRef.current) clearInterval(timerRef.current);
-          setCanContinue(true);
+          if (!doneRef.current) { doneRef.current = true; onFinished(); }
           return 0;
         }
         return s - 1;
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [isPlaying, canContinue]);
+  }, [isPlaying]);
+
+  function handleEnded() {
+    if (!doneRef.current) { doneRef.current = true; onFinished(); }
+  }
 
   const src = typeof videoUri === 'string' ? videoUri : '';
 
@@ -39,23 +43,17 @@ function WebVideoPlayer({ videoUri, watchSeconds, onFinished }: Props) {
         playsInline
         muted={false}
         onPlay={() => setIsPlaying(true)}
-        onEnded={() => setCanContinue(true)}
+        onEnded={handleEnded}
         style={{ width: '100%', maxHeight: '60%', objectFit: 'contain', backgroundColor: '#000' } as any}
       />
       <View style={styles.overlay}>
-        {!canContinue ? (
-          <View style={styles.watchingBadge}>
-            {!isPlaying ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.watchingText}>Gledaj pažljivo... {secondsLeft}s</Text>
-            )}
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.continueButton} onPress={onFinished}>
-            <Text style={styles.continueText}>Odgovori na pitanja →</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.watchingBadge}>
+          {!isPlaying ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.watchingText}>Gledaj pažljivo... {secondsLeft}s</Text>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -64,11 +62,10 @@ function WebVideoPlayer({ videoUri, watchSeconds, onFinished }: Props) {
 // ── Native: expo-video ────────────────────────────────────────────────────
 function NativeVideoPlayer({ videoUri, watchSeconds, onFinished }: Props) {
   const { useVideoPlayer, VideoView } = require('expo-video');
-  const [canContinue, setCanContinue] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(watchSeconds);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const doneRef = useRef(false);
 
   const player = useVideoPlayer(videoUri as any, (p: any) => {
     p.loop = false;
@@ -78,31 +75,34 @@ function NativeVideoPlayer({ videoUri, watchSeconds, onFinished }: Props) {
   useEffect(() => {
     const playSub = player.addListener('playingChange', ({ isPlaying: playing }: any) => {
       setIsPlaying(playing);
-      if (!playing && player.currentTime > 0) setCanContinue(true);
+      if (!playing && player.currentTime > 0 && !doneRef.current) {
+        doneRef.current = true;
+        onFinished();
+      }
     });
-    const statusSub = player.addListener('statusChange', ({ status, error: err }: any) => {
-      if (status === 'error') {
-        setError(err?.message ?? 'Video greška');
-        setCanContinue(true);
+    const statusSub = player.addListener('statusChange', ({ status }: any) => {
+      if (status === 'error' && !doneRef.current) {
+        doneRef.current = true;
+        onFinished();
       }
     });
     return () => { playSub.remove(); statusSub.remove(); };
   }, [player]);
 
   useEffect(() => {
-    if (!isPlaying || canContinue) return;
+    if (!isPlaying || doneRef.current) return;
     timerRef.current = setInterval(() => {
       setSecondsLeft(s => {
         if (s <= 1) {
           if (timerRef.current) clearInterval(timerRef.current);
-          setCanContinue(true);
+          if (!doneRef.current) { doneRef.current = true; onFinished(); }
           return 0;
         }
         return s - 1;
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [isPlaying, canContinue]);
+  }, [isPlaying]);
 
   return (
     <View style={styles.container}>
@@ -113,23 +113,13 @@ function NativeVideoPlayer({ videoUri, watchSeconds, onFinished }: Props) {
         nativeControls={false}
       />
       <View style={styles.overlay}>
-        {error ? (
-          <TouchableOpacity style={styles.continueButton} onPress={onFinished}>
-            <Text style={styles.continueText}>Video greška — preskoči →</Text>
-          </TouchableOpacity>
-        ) : !canContinue ? (
-          <View style={styles.watchingBadge}>
-            {!isPlaying ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.watchingText}>Gledaj pažljivo... {secondsLeft}s</Text>
-            )}
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.continueButton} onPress={onFinished}>
-            <Text style={styles.continueText}>Odgovori na pitanja →</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.watchingBadge}>
+          {!isPlaying ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.watchingText}>Gledaj pažljivo... {secondsLeft}s</Text>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -167,16 +157,5 @@ const styles = StyleSheet.create({
   watchingText: {
     color: '#aaa',
     fontSize: 14,
-  },
-  continueButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 30,
-  },
-  continueText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
   },
 });
