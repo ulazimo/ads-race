@@ -1,15 +1,16 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import ads from '../data/ads';
+import { useAds } from '../hooks/useAds';
 import { useScore } from '../hooks/useScore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
   const { totalScore, resetScore } = useScore();
+  const { ads, loading, error } = useAds();
 
   function startGame() {
     const randomAd = ads[Math.floor(Math.random() * ads.length)];
@@ -28,11 +29,18 @@ export default function HomeScreen({ navigation }: Props) {
           <Text style={styles.scoreUnit}>poena</Text>
         </View>
 
-        <TouchableOpacity style={styles.playButton} onPress={startGame}>
-          <Text style={styles.playButtonText}>Igraj</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.adCount}>{ads.length} reklama dostupno</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#4CAF50" />
+        ) : error ? (
+          <Text style={styles.errorText}>Greška: {error}</Text>
+        ) : (
+          <>
+            <TouchableOpacity style={styles.playButton} onPress={startGame}>
+              <Text style={styles.playButtonText}>Igraj</Text>
+            </TouchableOpacity>
+            <Text style={styles.adCount}>{ads.length} reklama dostupno</Text>
+          </>
+        )}
 
         {totalScore > 0 && (
           <TouchableOpacity onPress={resetScore} style={styles.resetButton}>
@@ -118,5 +126,10 @@ const styles = StyleSheet.create({
     color: '#555',
     fontSize: 13,
     textDecorationLine: 'underline',
+  },
+  errorText: {
+    color: '#e53935',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
