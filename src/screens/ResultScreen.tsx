@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -9,23 +9,30 @@ import { useLeaderboard } from '../hooks/useLeaderboard';
 type Props = NativeStackScreenProps<RootStackParamList, 'Result'>;
 
 export default function ResultScreen({ route, navigation }: Props) {
-  const { score, total, adTitle } = route.params;
+  const { round } = route.params;
   const { addScore } = useScore();
   const { addEntry } = useLeaderboard();
-  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
   const [name, setName] = useState('');
   const [saved, setSaved] = useState(false);
 
+  const totalScore = round.scores.reduce((s, v) => s + v, 0);
+  const maxScore = round.ads.reduce(
+    (s, ad) => s + ad.questions.reduce((qs, q) => qs + q.points, 0),
+    0
+  );
+  const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+
   useEffect(() => {
-    addScore(score);
+    addScore(totalScore);
   }, []);
 
   async function handleSave() {
     if (!name.trim()) return;
+    const adNames = round.ads.map(a => a.brand).join(', ');
     await addEntry({
       name: name.trim(),
-      score,
-      adTitle,
+      score: totalScore,
+      adTitle: adNames,
       date: new Date().toISOString().split('T')[0],
     });
     setSaved(true);
@@ -47,22 +54,36 @@ export default function ResultScreen({ route, navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.emoji}>{getEmoji()}</Text>
         <Text style={styles.message}>{getMessage()}</Text>
-        <Text style={styles.adTitle}>{adTitle}</Text>
 
         <View style={styles.scoreBox}>
           <Text style={styles.scoreValue}>
-            {score}<Text style={styles.total}> / {total}</Text>
+            {totalScore}<Text style={styles.total}> / {maxScore}</Text>
           </Text>
-          <Text style={styles.scoreLabel}>poena</Text>
+          <Text style={styles.scoreLabel}>ukupno poena</Text>
         </View>
 
         <View style={styles.percentageBar}>
           <View style={[styles.percentageFill, { width: `${percentage}%` as any }]} />
         </View>
         <Text style={styles.percentageText}>{percentage}% tačnih odgovora</Text>
+
+        {/* Breakdown per ad */}
+        <View style={styles.breakdown}>
+          {round.ads.map((ad, i) => {
+            const adMax = ad.questions.reduce((s, q) => s + q.points, 0);
+            return (
+              <View key={ad.id} style={styles.breakdownRow}>
+                <Text style={styles.breakdownBrand}>{ad.brand}</Text>
+                <Text style={styles.breakdownScore}>
+                  {round.scores[i] ?? 0} / {adMax}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
 
         {!saved ? (
           <View style={styles.saveRow}>
@@ -87,10 +108,7 @@ export default function ResultScreen({ route, navigation }: Props) {
         )}
 
         <View style={styles.buttons}>
-          <TouchableOpacity
-            style={styles.playAgainButton}
-            onPress={() => navigation.popToTop()}
-          >
+          <TouchableOpacity style={styles.playAgainButton} onPress={() => navigation.popToTop()}>
             <Text style={styles.playAgainText}>Igraj opet</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -100,7 +118,7 @@ export default function ResultScreen({ route, navigation }: Props) {
             <Text style={styles.leaderboardText}>Leaderboard</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -108,12 +126,11 @@ export default function ResultScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f0f1a' },
   content: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 32, gap: 10,
+    flexGrow: 1, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 32, paddingVertical: 24, gap: 10,
   },
   emoji: { fontSize: 52 },
   message: { color: '#fff', fontSize: 28, fontWeight: '800' },
-  adTitle: { color: '#666', fontSize: 14 },
   scoreBox: { alignItems: 'center', marginBottom: 4 },
   scoreValue: { color: '#4CAF50', fontSize: 48, fontWeight: '900' },
   total: { color: '#555', fontSize: 28, fontWeight: '400' },
@@ -124,9 +141,16 @@ const styles = StyleSheet.create({
   },
   percentageFill: { height: '100%', backgroundColor: '#4CAF50', borderRadius: 4 },
   percentageText: { color: '#888', fontSize: 13 },
-  saveRow: {
-    flexDirection: 'row', width: '100%', gap: 10, marginTop: 4,
+  breakdown: {
+    width: '100%', backgroundColor: '#1e1e2e', borderRadius: 12,
+    padding: 14, gap: 8, borderWidth: 1, borderColor: '#2a2a3e',
   },
+  breakdownRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  },
+  breakdownBrand: { color: '#ccc', fontSize: 14, fontWeight: '600' },
+  breakdownScore: { color: '#4CAF50', fontSize: 14, fontWeight: '700' },
+  saveRow: { flexDirection: 'row', width: '100%', gap: 10, marginTop: 4 },
   nameInput: {
     flex: 1, backgroundColor: '#1e1e2e', borderRadius: 12,
     padding: 14, color: '#fff', fontSize: 15,

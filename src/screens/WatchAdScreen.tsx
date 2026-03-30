@@ -8,42 +8,40 @@ import AdVideoPlayer from '../components/AdVideoPlayer';
 type Props = NativeStackScreenProps<RootStackParamList, 'WatchAd'>;
 
 export default function WatchAdScreen({ route, navigation }: Props) {
-  const { ad } = route.params;
+  const { round } = route.params;
+  const ad = round.ads[round.currentIndex];
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.brand}>{ad.brand}</Text>
-        <Text style={styles.title}>{ad.title}</Text>
+        <Text style={styles.roundBadge}>
+          {round.currentIndex + 1} / {round.ads.length}
+        </Text>
+        <View>
+          <Text style={styles.brand}>{ad.brand}</Text>
+          <Text style={styles.title}>{ad.title}</Text>
+        </View>
       </View>
       <AdVideoPlayer
         videoUri={ad.videoUri}
         watchSeconds={ad.watchSeconds}
-        onFinished={() => navigation.replace('Quiz', { ad })}
+        onFinished={() => navigation.replace('Quiz', { round })}
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
+  container: { flex: 1, backgroundColor: '#000' },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8,
   },
-  brand: {
-    color: '#888',
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  roundBadge: {
+    color: '#4CAF50', fontSize: 13, fontWeight: '700',
+    backgroundColor: 'rgba(76,175,80,0.15)', paddingHorizontal: 10,
+    paddingVertical: 4, borderRadius: 10, overflow: 'hidden',
   },
-  title: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
+  brand: { color: '#888', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
+  title: { color: '#fff', fontSize: 18, fontWeight: '600' },
 });

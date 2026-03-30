@@ -9,33 +9,45 @@ import ProgressBar from '../components/ProgressBar';
 type Props = NativeStackScreenProps<RootStackParamList, 'Quiz'>;
 
 export default function QuizScreen({ route, navigation }: Props) {
-  const { ad } = route.params;
+  const { round } = route.params;
+  const ad = round.ads[round.currentIndex];
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [totalScore, setTotalScore] = useState(0);
+  const [adScore, setAdScore] = useState(0);
   const [isAnswered, setIsAnswered] = useState(false);
 
   const question = ad.questions[currentIndex];
-  const isLast = currentIndex === ad.questions.length - 1;
+  const isLastQuestion = currentIndex === ad.questions.length - 1;
 
-  const advance = useCallback(
+  const advanceAfterQuestion = useCallback(
     (earnedPoints: number) => {
-      const newScore = totalScore + earnedPoints;
-      if (isLast) {
-        const maxScore = ad.questions.reduce((sum, q) => sum + q.points, 0);
-        navigation.replace('Result', {
-          score: newScore,
-          total: maxScore,
-          adTitle: ad.title,
-        });
+      const newAdScore = adScore + earnedPoints;
+
+      if (isLastQuestion) {
+        // Done with this ad's quiz — go to next ad or result
+        const newScores = [...round.scores, newAdScore];
+        const nextIndex = round.currentIndex + 1;
+
+        if (nextIndex < round.ads.length) {
+          // More ads to go
+          navigation.replace('WatchAd', {
+            round: { ...round, currentIndex: nextIndex, scores: newScores },
+          });
+        } else {
+          // Round complete
+          navigation.replace('Result', {
+            round: { ...round, scores: newScores },
+          });
+        }
       } else {
-        setTotalScore(newScore);
+        setAdScore(newAdScore);
         setCurrentIndex(i => i + 1);
         setSelectedIndex(null);
         setIsAnswered(false);
       }
     },
-    [totalScore, isLast, currentIndex]
+    [adScore, isLastQuestion, round, currentIndex]
   );
 
   function handleSelect(index: number) {
@@ -43,29 +55,32 @@ export default function QuizScreen({ route, navigation }: Props) {
     setSelectedIndex(index);
     setIsAnswered(true);
     const correct = index === question.correctIndex;
-    setTimeout(() => advance(correct ? question.points : 0), 1200);
+    setTimeout(() => advanceAfterQuestion(correct ? question.points : 0), 1200);
   }
 
   function handleTimeout() {
     if (isAnswered) return;
     setIsAnswered(true);
-    setSelectedIndex(-1); // nothing selected, just show correct
-    setTimeout(() => advance(0), 1200);
+    setSelectedIndex(-1);
+    setTimeout(() => advanceAfterQuestion(0), 1200);
   }
 
-  const maxScore = ad.questions.reduce((sum, q) => sum + q.points, 0);
+  const maxAdScore = ad.questions.reduce((sum, q) => sum + q.points, 0);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text style={styles.counter}>
-            {currentIndex + 1} / {ad.questions.length}
+          <Text style={styles.roundLabel}>
+            Reklama {round.currentIndex + 1}/{round.ads.length}
           </Text>
-          <Text style={styles.score}>{totalScore} / {maxScore} pts</Text>
+          <Text style={styles.counter}>
+            Pitanje {currentIndex + 1}/{ad.questions.length}
+          </Text>
+          <Text style={styles.score}>{adScore}/{maxAdScore}</Text>
         </View>
         <ProgressBar
-          key={`${currentIndex}`}
+          key={`${round.currentIndex}-${currentIndex}`}
           duration={question.timeoutSeconds}
           onExpired={handleTimeout}
         />
@@ -90,43 +105,13 @@ export default function QuizScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0f0f1a',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-    gap: 10,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  counter: {
-    color: '#888',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  score: {
-    color: '#4CAF50',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  body: {
-    flex: 1,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-  },
-  footer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    alignItems: 'center',
-  },
-  adLabel: {
-    color: '#555',
-    fontSize: 12,
-  },
+  container: { flex: 1, backgroundColor: '#0f0f1a' },
+  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, gap: 10 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  roundLabel: { color: '#4CAF50', fontSize: 13, fontWeight: '700' },
+  counter: { color: '#888', fontSize: 14, fontWeight: '600' },
+  score: { color: '#4CAF50', fontSize: 14, fontWeight: '700' },
+  body: { flex: 1, paddingHorizontal: 20, justifyContent: 'center' },
+  footer: { paddingHorizontal: 20, paddingBottom: 20, alignItems: 'center' },
+  adLabel: { color: '#555', fontSize: 12 },
 });

@@ -2,9 +2,17 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { RootStackParamList, RoundState } from '../navigation/AppNavigator';
 import { useAds } from '../hooks/useAds';
 import { useScore } from '../hooks/useScore';
+import { Ad } from '../data/ads';
+
+const ADS_PER_ROUND = 3;
+
+function pickRandom(ads: Ad[], count: number): Ad[] {
+  const shuffled = [...ads].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -13,8 +21,9 @@ export default function HomeScreen({ navigation }: Props) {
   const { ads, loading, error } = useAds();
 
   function startGame() {
-    const randomAd = ads[Math.floor(Math.random() * ads.length)];
-    navigation.navigate('WatchAd', { ad: randomAd });
+    const roundAds = pickRandom(ads, Math.min(ADS_PER_ROUND, ads.length));
+    const round: RoundState = { ads: roundAds, currentIndex: 0, scores: [] };
+    navigation.navigate('WatchAd', { round });
   }
 
   return (

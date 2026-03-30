@@ -7,11 +7,17 @@ import ResultScreen from '../screens/ResultScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
 import { Ad } from '../data/ads';
 
+export type RoundState = {
+  ads: Ad[];
+  currentIndex: number;
+  scores: number[];  // score per ad quiz
+};
+
 export type RootStackParamList = {
   Home: undefined;
-  WatchAd: { ad: Ad };
-  Quiz: { ad: Ad };
-  Result: { score: number; total: number; adTitle: string };
+  WatchAd: { round: RoundState };
+  Quiz: { round: RoundState };
+  Result: { round: RoundState };
   Leaderboard: undefined;
 };
 
