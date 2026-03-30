@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "WebSearch",
+      "WebFetch(domain:archive.org)",
+      "WebFetch(domain:retrotvads.com)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "Bash(npx expo:*)",
+      "Bash(npm ls:*)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(sed -i '' \"s/import { StackScreenProps } from ''@react-navigation\\\\/stack'';/import { NativeStackScreenProps } from ''@react-navigation\\\\/native-stack'';/\" \"$f\")",
+      "Bash(sed -i '' \"s/StackScreenProps/NativeStackScreenProps/g\" \"$f\")",
+      "Bash(done)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm list:*)",
+      "Bash(netlify deploy:*)",
+      "Bash(npx surge:*)",
+      "Bash(kill %1)",
+      "Bash(gh auth:*)"
+    ]
+  }
+}
